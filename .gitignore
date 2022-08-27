@@ -1,0 +1,9 @@
+*
+!*.*
+!*/
+*.log
+*.exe
+!Makefile
+!Dockerfile
+!extra-packages
+bins/*.deb
