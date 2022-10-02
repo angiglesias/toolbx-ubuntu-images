@@ -26,3 +26,8 @@ libxss1
 libxkbfile1
 libsecret-1-0
 software-properties-common
+fonts-noto
+fonts-noto-cjk
+fonts-noto-cjk-extra
+fonts-noto-color-emoji
+fonts-noto-mono
