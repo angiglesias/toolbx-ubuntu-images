@@ -1,0 +1,35 @@
+name: Build image with PR changes
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build image
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: 🔢 Get the current PR number
+        uses: jwalton/gh-find-current-pr@v1
+        id: is_pr
+        with:
+          state: open
+
+      - name: Build image
+        id: build-image
+        if: ${{ steps.is_pr.outputs.number }}
+        uses: redhat-actions/buildah-build@v2
+        with:
+          image: ubuntu-toolbox
+          tags: latest pr-${{ steps.is_pr.outputs.number }}
+          containerfiles: |
+            ./Dockerfile
