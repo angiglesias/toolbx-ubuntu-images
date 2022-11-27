@@ -1,13 +1,13 @@
 # BASE image
-ARG BASE_IMAGE=ubuntu-toolbox:20.04
+ARG BASE_IMAGE=ubuntu-toolbox:22.04
 
 FROM ${BASE_IMAGE}
 
 # CUDA and CUDNN versions
-ARG CUDA_PLATFORM=ubuntu1804
-ARG CUDA_RELEASE=10-1
-ARG CUDNN_BRANCH=7
-ARG CUDNN_RELEASE=7.6.5.32-1+cuda10.1
+ARG CUDA_PLATFORM=ubuntu2204
+ARG CUDA_RELEASE=11-8
+ARG CUDNN_BRANCH=8
+ARG CUDNN_RELEASE=8.6.0.163-1+cuda11.8
 ARG BINARIES_DIR=/data/bins
 ARG TARGETARCH=amd64
 
@@ -33,7 +33,9 @@ RUN apt-get update && \
 RUN wget \
     https://developer.download.nvidia.com/compute/cuda/repos/${CUDA_PLATFORM}/x86_64/cuda-${CUDA_PLATFORM}.pin && \
     mv cuda-${CUDA_PLATFORM}.pin /etc/apt/preferences.d/cuda-repository-pin-600 && \
-    apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/${CUDA_PLATFORM}/x86_64/7fa2af80.pub && \
+    if [ -f ${BINARIES_DIR}/faed14dd.pub ]; then \
+        apt-key add ${BINARIES_DIR}/faed14dd.pub; \
+    fi && \
     apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/${CUDA_PLATFORM}/x86_64/3bf863cc.pub && \
     add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/${CUDA_PLATFORM}/x86_64/ /" && \
     apt-get update && apt-get install -y cuda-toolkit-${CUDA_RELEASE} && \

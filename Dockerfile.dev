@@ -1,12 +1,13 @@
 # BASE image
-ARG BASE_IMAGE=ubuntu-toolbox:20.04-cuda10.1
+ARG BASE_IMAGE=ubuntu-toolbox:22.04-cuda11.8
 
 FROM ${BASE_IMAGE}
 
 # FFMPEG and OpenCV versions
-ARG OPENCV_RELEASE=4.5.5
-ARG FFMPEG_RELEASE=4.4.2
-ARG VIDEOSDK_RELEASE=9.1.23.2
+ARG CUDA_ARCH_BIN=8.6
+ARG OPENCV_RELEASE=4.6.0
+ARG FFMPEG_RELEASE=5.0.2
+ARG VIDEOSDK_RELEASE=11.1.5.2
 
 WORKDIR /opt/workspace
 
@@ -49,7 +50,7 @@ RUN wget https://ffmpeg.org/releases/ffmpeg-${FFMPEG_RELEASE}.tar.gz -O ffmpeg.t
      -D WITH_CUDA=ON -D WITH_CUDNN=ON -D OPENCV_DNN_CUDA=ON -D CUDA_FAST_MATH=1 \
 #     -D CUDA_cublas_LIBRARY=/usr/local/cuda-10.2/lib64/libcublas.so \
      -D BUILD_opencv_cudacodec=OFF -D BUILD_opencv_cudalegacy=OFF -D BUILD_opencv_java_bindings_generator=OFF \
-     -D CUDA_ARCH_BIN=7.5 -D WITH_CUBLAS=1 -D OPENCV_EXTRA_MODULES_PATH=/opt/workspace/opencv_contrib-${OPENCV_RELEASE}/modules \
+     -D CUDA_ARCH_BIN=${CUDA_ARCH_BIN} -D WITH_CUBLAS=1 -D OPENCV_EXTRA_MODULES_PATH=/opt/workspace/opencv_contrib-${OPENCV_RELEASE}/modules \
      -D HAVE_opencv_python3=ON -D PYTHON_EXECUTABLE=/usr/bin/python3 .. && \
      make -j$(nproc --ignore=4) && make install && make clean && \
      cd ../.. && \
@@ -60,8 +61,8 @@ RUN apt-get update && \
     apt-get install -y \
     crossbuild-essential-armhf crossbuild-essential-arm64 \
     ruby ruby-dev rubygems gzip bzip2 rsync perl cpio bc libncurses5-dev \
-    python2 python2-dev python-is-python2 \
-    device-tree-compiler jq quilt pulsemixer mosquitto-clients flex bison libssl-dev \
+    python2 python2-dev \
+    device-tree-compiler jq quilt pulsemixer mosquitto-clients pahole flex bison libssl-dev \
 # Git libsecret credential helper
     libsecret-1-0 libsecret-1-dev libglib2.0-dev \
 # VSCode auxiliar components
