@@ -1,13 +1,13 @@
 # BASE image
-ARG BASE_IMAGE=ubuntu-toolbox:22.04-cuda11.8
+ARG BASE_IMAGE=ubuntu-toolbox:24.04-cuda12.2
 
 FROM ${BASE_IMAGE}
 
 # FFMPEG and OpenCV versions
 ARG CUDA_ARCH_BIN=8.6
-ARG OPENCV_RELEASE=4.6.0
-ARG FFMPEG_RELEASE=5.0.2
-ARG VIDEOSDK_RELEASE=11.1.5.2
+ARG OPENCV_RELEASE=4.9.0
+ARG FFMPEG_RELEASE=7.0
+ARG VIDEOSDK_RELEASE=12.2.72.0
 
 WORKDIR /opt/workspace
 
@@ -30,10 +30,10 @@ RUN apt-get update && \
 RUN wget https://ffmpeg.org/releases/ffmpeg-${FFMPEG_RELEASE}.tar.gz -O ffmpeg.tar.gz && \
     tar -zxvf ffmpeg.tar.gz && cd ffmpeg-${FFMPEG_RELEASE} && \
     . /etc/profile.d/cuda.sh && \
-    ./configure --enable-nonfree --enable-cuda-nvcc --enable-nvdec --enable-nvenc --enable-libnpp \
-    --extra-cflags="-I/usr/local/cuda/include" --extra-ldflags="-L/usr/local/cuda/lib64" \
+    ./configure --enable-nonfree --enable-cuda-nvcc --nvccflags="-gencode arch=compute_$( echo -n ${CUDA_ARCH_BIN} | tr -d '.'),code=sm_$(echo -n ${CUDA_ARCH_BIN} | tr -d '.') -O2" \
+    --enable-nvdec --enable-nvenc --enable-libnpp --extra-cflags="-I/usr/local/cuda/include" --extra-ldflags="-L/usr/local/cuda/lib64" \
     --enable-gpl --enable-gnutls --enable-libass --enable-libopus --enable-libvorbis \
-    --enable-libx264 --enable-libx265 --enable-shared --enable-static --enable-libpulse && \
+    --enable-libx264 --enable-libx265 --enable-shared --enable-static --enable-libpulse ; cat ffbuild/config.log && \
     make -j$(nproc --ignore=4) && make install && ldconfig && make clean && \
     cd .. && rm -rf FFmpeg-n${FFMPEG_RELEASE} ffmpeg.tar.gz 
 
@@ -61,7 +61,6 @@ RUN apt-get update && \
     apt-get install -y \
     crossbuild-essential-armhf crossbuild-essential-arm64 \
     ruby ruby-dev rubygems gzip bzip2 rsync perl cpio bc libncurses5-dev \
-    python2 python2-dev \
     device-tree-compiler jq quilt pulsemixer mosquitto-clients pahole flex bison libssl-dev \
 # Git libsecret credential helper
     libsecret-1-0 libsecret-1-dev libglib2.0-dev \
