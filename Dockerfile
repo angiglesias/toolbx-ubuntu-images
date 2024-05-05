@@ -1,4 +1,4 @@
-ARG RELEASE=22.04
+ARG RELEASE=24.04
 
 FROM docker.io/library/ubuntu:${RELEASE}
 
@@ -8,7 +8,7 @@ LABEL com.github.containers.toolbox="true" \
       version="${RELEASE}" \
       usage="This image is meant to be used with the toolbox command" \
       summary="Base image for creating Ubuntu toolbox containers" \
-      maintainer="Debarshi Ray <rishi@fedoraproject.org>"
+      maintainer="Angel Iglesias <ang.iglesiasg@gmail.com>"
 
 COPY README.md /
 
@@ -25,7 +25,8 @@ RUN sed -Ei '/apt-get (update|upgrade)/s/^/#/' /usr/local/sbin/unminimize && \
     yes | /usr/local/sbin/unminimize && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install \
         ubuntu-minimal ubuntu-standard \
-        libnss-myhostname && \
+        libnss-myhostname \
+        flatpak-xdg-utils && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install \
     	--no-install-recommends \
     	gnome-terminal && \
@@ -43,5 +44,15 @@ RUN sed -i '/^auth.*pam_unix.so/s/nullok_secure/try_first_pass nullok/' /etc/pam
 
 # Fix empty bind-mount to clear selinuxfs (see #337)
 RUN mkdir /usr/share/empty
+
+# Add flatpak-spawn to /usr/bin
+RUN ln -s /usr/libexec/flatpak-xdg-utils/flatpak-spawn /usr/bin/
+
+# Having anything in /home prevents toolbox from symlinking /var/home there,
+# and 'ubuntu' user with UID 1000 will most likely conflict with host user as well
+RUN userdel --remove ubuntu
+
+# Disable APT ESM hook which tries to enable some systemd services on each apt invocation
+RUN rm /etc/apt/apt.conf.d/20apt-esm-hook.conf
 
 CMD /bin/bash

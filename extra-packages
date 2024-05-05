@@ -10,7 +10,7 @@ zsh
 curl
 wget
 fonts-cantarell
-libasound2
+alsa-base
 alsa-utils
 pulseaudio-utils
 libx11-xcb1

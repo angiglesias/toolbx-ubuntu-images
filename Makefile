@@ -1,21 +1,22 @@
-VIDEOSDK_RELEASE	?= 9.1.23.2
-OPENCV_RELEASE		?= 4.5.5
-FFMPEG_RELEASE		?= 4.4.2
-UBUNTU_RELEASE		?= 20.04
-CUDNN_RELEASE 		?= 7.6.5.32-1+cuda10.1
-CUDA_PLATFORM		?= ubuntu1804
-CUDNN_BRANCH		?= 7
-CUDA_RELEASE		?= 10-1
+VIDEOSDK_RELEASE	?= 12.2.72.0
+OPENCV_RELEASE		?= 4.9.0
+FFMPEG_RELEASE		?= 7.0
+UBUNTU_RELEASE		?= 24.04
+CUDNN_RELEASE 		?= 8.9.7.29-1+cuda12.2
+CUDA_PLATFORM		?= ubuntu2204
+CUDA_ARCH_BIN		?= 8.6
+CUDNN_BRANCH		?= 8
+CUDA_RELEASE		?= 12-2
 BINARIES_DIR		?= /data/bins
-IMAGE			?= ubuntu-toolbox
+IMAGE				?= ubuntu-toolbox
 
 .PHONY: base
 base:
-	podman build --build-arg "RELEASE=$(UBUNTU_RELEASE)" -t $(IMAGE):$(UBUNTU_RELEASE) -f Dockerfile .
+	podman build --rm --build-arg "RELEASE=$(UBUNTU_RELEASE)" -t $(IMAGE):$(UBUNTU_RELEASE) -f Dockerfile .
 
 .PHONY: cuda
 cuda: base
-	podman build -t $(IMAGE):$(UBUNTU_RELEASE)-cuda$(subst -,.,$(CUDA_RELEASE)) \
+	podman build --rm -t $(IMAGE):$(UBUNTU_RELEASE)-cuda$(subst -,.,$(CUDA_RELEASE)) \
 		--build-arg "BASE_IMAGE=$(IMAGE):$(UBUNTU_RELEASE)" \
 		--build-arg "CUDA_PLATFORM=$(CUDA_PLATFORM)" \
 		--build-arg "CUDNN_RELEASE=$(CUDNN_RELEASE)" \
@@ -28,10 +29,11 @@ cuda: base
 
 .PHONY: dev
 dev: cuda
-	podman build -t $(IMAGE):$(UBUNTU_RELEASE)-dev \
+	podman build --rm -t $(IMAGE):$(UBUNTU_RELEASE)-dev \
 		--build-arg "BASE_IMAGE=$(IMAGE):$(UBUNTU_RELEASE)-cuda$(subst -,.,$(CUDA_RELEASE))" \
 		--build-arg "VIDEOSDK_RELEASE=$(VIDEOSDK_RELEASE)" \
 		--build-arg "OPENCV_RELEASE=$(OPENCV_RELEASE)" \
 		--build-arg "FFMPEG_RELEASE=$(FFMPEG_RELEASE)" \
+		--build-arg "CUDA_ARCH_BIN=$(CUDA_ARCH_BIN)" \
 		-f Dockerfile.dev .
 
