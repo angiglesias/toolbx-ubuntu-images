@@ -1,8 +1,5 @@
 name: Build image with PR changes
 on:
-  push:
-    branches-ignore:
-      - main
   pull_request:
     branches:
       - main
@@ -26,7 +23,6 @@ jobs:
 
       - name: Build image
         id: build-image
-        if: ${{ steps.is_pr.outputs.number }}
         uses: redhat-actions/buildah-build@v2
         with:
           image: ubuntu-toolbox
