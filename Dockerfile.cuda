@@ -5,9 +5,9 @@ FROM ${BASE_IMAGE}
 
 # CUDA and CUDNN versions
 ARG CUDA_PLATFORM=ubuntu2204
-ARG CUDA_RELEASE=12-2
-ARG CUDNN_BRANCH=8
-ARG CUDNN_RELEASE=8.9.7.29-1+cuda12.2
+ARG CUDA_RELEASE=12-6
+ARG CUDNN_BRANCH=9
+ARG CUDNN_RELEASE=9.3.0.75-1
 ARG BINARIES_DIR=/data/bins
 ARG TARGETARCH=amd64
 ARG RELEASE=24.04
@@ -18,24 +18,48 @@ RUN apt-get update && \
     update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java 2000 && \
     update-alternatives --install /usr/bin/javac javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac 2000 && \
     # Install GCC 8.3.x and set as default compiler (required to compile programs with nvcc on CUDA 10.1+)
-    if [ "${CUDA_RELEASE}" = "10-1" ]; then \
+    if [ "${CUDA_RELEASE%-*}" = "10" ]; then \
         apt-get install -y gcc-8 g++-8 && \
-        update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 9 && \
-        update-alternatives	--install /usr/bin/gcc gcc /usr/bin/gcc-8 10 && \
-        update-alternatives	--install /usr/bin/g++ g++ /usr/bin/g++-9 9 && \
-        update-alternatives	--install /usr/bin/g++ g++ /usr/bin/g++-8 10 && \
         update-alternatives --quiet --remove cpp /usr/bin/cpp && \
-        update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-9 9 && \
+        for rel in /usr/bin/gcc-*; do \
+            if [ "${rel##*/}" != "gcc-8" ] && [ "${rel#*-}" -eq "${rel#*-}" ] 2>/dev/null; then \
+                update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${rel##*-} 9; \
+            fi \
+        done && \
+        update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 10 && \
+        for rel in /usr/bin/g++-*; do \
+            if [ "${rel##*/}" != "g++-8" ]; then \
+                update-alternatives --install /usr/bin/g++ g++ /usr/bin/gcc-${rel##*-} 9; \
+            fi \
+        done && \
+        update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 10 && \
+        for rel in /usr/bin/cpp-*; do \
+            if [ "$${rel##*/}" != "cpp-8" ]; then \
+                update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-${rel##*-} 9; \
+            fi \
+        done && \
         update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-8 10; \
     fi && \
-    if [ "${CUDA_RELEASE}" = "12-2" ]; then \
+    if [ "${CUDA_RELEASE%-*}" = "12" ]; then \
         apt-get install -y gcc-12 g++-12 && \
-        update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 9 && \
-        update-alternatives	--install /usr/bin/gcc gcc /usr/bin/gcc-12 10 && \
-        update-alternatives	--install /usr/bin/g++ g++ /usr/bin/g++-13 9 && \
-        update-alternatives	--install /usr/bin/g++ g++ /usr/bin/g++-12 10 && \
         update-alternatives --quiet --remove cpp /usr/bin/cpp && \
-        update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-13 9 && \
+        for rel in /usr/bin/gcc-*; do \
+            if [ "${rel##*/}" != "gcc-12" ] && [ "${rel#*-}" -eq "${rel#*-}" ] 2>/dev/null; then \
+                update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${rel##*-} 9; \
+            fi \
+        done && \
+        update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 10 && \
+        for rel in /usr/bin/g++-*; do \
+            if [ "${rel##*/}" != "g++-12" ]; then \
+                update-alternatives --install /usr/bin/g++ g++ /usr/bin/gcc-${rel##*-} 9; \
+            fi \
+        done && \
+        update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 10 && \
+        for rel in /usr/bin/cpp-*; do \
+            if [ "${rel##*/}" != "cpp-12" ]; then \
+                update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-${rel##*-} 9; \
+            fi \
+        done && \
         update-alternatives --install /usr/bin/cpp cpp /usr/bin/cpp-12 10; \
     fi && \
     # Nsight deps workaround
@@ -58,7 +82,10 @@ RUN wget \
     dpkg -i cuda-keyring_1.1-1_all.deb && \
     rm cuda-keyring_1.1-1_all.deb && \
     apt-get update && apt-get install -y cuda-toolkit-${CUDA_RELEASE} && \
-    if [ -n "${CUDNN_RELEASE}" ]; then \
+    apt clean && rm -rd /var/lib/apt/lists/*
+
+RUN apt-get update && \
+    if [ "${CUDNN_BRANCH}" = "8" ]; then \
         if [ -f "${BINARIES_DIR}/libcudnn${CUDNN_BRANCH}_${CUDNN_RELEASE}_${TARGETARCH}.deb" ] && \
            [ -f "${BINARIES_DIR}/libcudnn${CUDNN_BRANCH}-dev_${CUDNN_RELEASE}_${TARGETARCH}.deb" ]; then \
             dpkg -i ${BINARIES_DIR}/libcudnn${CUDNN_BRANCH}_${CUDNN_RELEASE}_${TARGETARCH}.deb \
@@ -68,7 +95,11 @@ RUN wget \
                 libcudnn${CUDNN_BRANCH}-dev=${CUDNN_RELEASE}; \
         fi \
     else \
-        apt-get install -y cudnn${CUDNN_BRANCH}-cuda-${CUDA_RELEASE}; \
+        apt-get install -y \
+            libcudnn${CUDNN_BRANCH}-cuda-${CUDA_RELEASE%%-*}=${CUDNN_RELEASE} \
+            libcudnn${CUDNN_BRANCH}-dev-cuda-${CUDA_RELEASE%%-*}=${CUDNN_RELEASE} \
+            libcudnn${CUDNN_BRANCH}-static-cuda-${CUDA_RELEASE%%-*}=${CUDNN_RELEASE} \
+            cudnn${CUDNN_BRANCH}-cuda-${CUDA_RELEASE}=${CUDNN_RELEASE}; \
     fi && \
     apt clean && rm -rd /var/lib/apt/lists/*
 
