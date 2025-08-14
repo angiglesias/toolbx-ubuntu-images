@@ -16,13 +16,26 @@ COPY README.md /
 # removing docker-gzip-indexes specifically helps with command-not-found
 RUN rm /etc/apt/apt.conf.d/docker-gzip-indexes /etc/apt/apt.conf.d/docker-no-languages
 
+# Enable myhostname nss plugin for clean hostname resolution without patching
+# hosts (at least for sudo), add it right after 'files' entry. We expect that
+# this entry is not present yet. Do this early so that package postinst (which
+# adds it too late in the order) skips this step
+RUN sed -Ei 's/^(hosts:.*)(\<files\>)\s*(.*)/\1\2 myhostname \3/' /etc/nsswitch.conf
+
 # Restore documentation but do not upgrade all packages, that's not appropriate;
 # Install ubuntu-minimal & ubuntu-standard
 # Install extra packages as well as libnss-myhostname
 COPY extra-packages /
-RUN sed -Ei '/apt-get (update|upgrade)/s/^/#/' /usr/local/sbin/unminimize && \
-    apt-get update && \
-    yes | /usr/local/sbin/unminimize && \
+RUN apt-get update && \
+    . /etc/os-release && \
+    if [ "$VERSION_ID" = "24.04" ]; then \
+      DEBIAN_FRONTEND=noninteractive apt-get -y install unminimize; \
+      export unminimize=/usr/bin/unminimize ; \
+    else \
+      export unminimize=/usr/local/sbin/unminimize ; \
+    fi && \
+    sed -Ei '/apt-get (update|upgrade)/s/^/#/' $unminimize && \
+    yes | $unminimize && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install \
         ubuntu-minimal ubuntu-standard \
         libnss-myhostname \
