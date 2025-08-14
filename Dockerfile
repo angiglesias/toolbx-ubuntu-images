@@ -28,8 +28,8 @@ RUN sed -Ei '/apt-get (update|upgrade)/s/^/#/' /usr/local/sbin/unminimize && \
         libnss-myhostname \
         flatpak-xdg-utils && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install \
-    	--no-install-recommends \
-    	gnome-terminal && \
+       --no-install-recommends \
+       gnome-terminal && \
     DEBIAN_FRONTEND=noninteractive apt-get -y install \
         $(cat extra-packages | xargs) && \
     rm -rd /var/lib/apt/lists/*
@@ -50,7 +50,7 @@ RUN ln -s /usr/libexec/flatpak-xdg-utils/flatpak-spawn /usr/bin/
 
 # Having anything in /home prevents toolbox from symlinking /var/home there,
 # and 'ubuntu' user with UID 1000 will most likely conflict with host user as well
-RUN userdel --remove ubuntu
+RUN userdel --remove ubuntu || true
 
 # Disable APT ESM hook which tries to enable some systemd services on each apt invocation
 RUN rm /etc/apt/apt.conf.d/20apt-esm-hook.conf
